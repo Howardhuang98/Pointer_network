@@ -11,6 +11,7 @@ import keras.backend as K
 from keras.activations import tanh, softmax
 from keras.engine.base_layer import InputSpec
 from keras.layers import LSTM
+import tensorflow as tf
 
 
 class Encoder(keras.layers.Layer):
@@ -94,8 +95,7 @@ class Decoder(keras.layers.Layer):
     """
 
     def __init__(self, hidden_dimensions=128, name='decoder', **kwargs):
-        super(Decoder, self).__init__(
-            hidden_dimensions, name=name, **kwargs)
+        super(Decoder, self).__init__(name=name, **kwargs)
         self.hidden_dimensions = hidden_dimensions
         self.attention = Attention(hidden_dimensions)
         self.decoder_cell = DecoderCell(hidden_dimensions)
@@ -113,14 +113,16 @@ class Decoder(keras.layers.Layer):
         """
         self.enc_output = enc_output
         input_shape = enc_output.shape
-        self.h_n = enc_output[:, enc_output.shape[1] - 1, :]
         x_input = enc_output[:, enc_output.shape[1] - 1, :]
         x_input = K.repeat(x_input, input_shape[1])
         """
         进入rnn函数，在x_input上，在时间戳维度上进行迭代执行step函数。
+        step 函数需要的状态共有3个，分别为[h,c,last_pointer], 第一次的last_pointer为0张量
         """
+        last_pointer = tf.zeros(shape=(enc_output.shape[0],enc_output.shape[1]))
+        initial_states = states + [last_pointer]
         last_output, outputs, states = K.rnn(self.step, x_input,
-                                             states)
+                                             initial_states)
 
         return outputs
 
@@ -128,10 +130,11 @@ class Decoder(keras.layers.Layer):
         """
         对于这个K.rnn，x_input已经定死了，只能是h_n，所以只能通过状态来输入上一次的结果。
         :param x_input: [batch,hidden_dimensions],是编码器最后一次的隐状态, 且每次进来都是
-        :param states: [h,c]
+        :param states: [h,c,last_pointer]
         :return:
         """
-        en_seq = x_input
-        _, [h, c] = self.decoder_cell(en_seq,states)
+        h, c, last_pointer = states
+        _, [h, c] = self.decoder_cell(last_pointer, [h,c])
+        # probs 是 [batch,输入时间戳]大小的张量
         probs = self.attention(self.enc_output, h)
-        return probs, [h, c]
+        return probs, [h, c, probs]
