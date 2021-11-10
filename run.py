@@ -1,0 +1,78 @@
+#!/usr/bin/env python
+# -*- encoding: utf-8 -*-
+"""
+@File    :   run.py    
+@Contact :   huanghoward@foxmail.com
+@Modify Time :    2021/11/10 15:38  
+------------      
+"""
+import numpy as np
+import tensorflow as tf
+from keras.layers import Input
+from keras.models import Model
+from matplotlib import pyplot as plt
+from sklearn.model_selection import train_test_split
+from model import *
+import time
+# 记录脚本运行时间
+time = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
+
+
+# 加载在TSP_data脚本中生成的数据,位于data文件夹内
+X = np.load(r"data/X-100000.npy")
+Y = np.load(r"data/Y-100000.npy")
+YY = np.load(r"data/YY-100000.npy")
+x_train, x_test, y_train, y_test = train_test_split(X, YY, test_size=0.2)
+x_train, x_valid, y_train, y_valid = train_test_split(x_train, y_train, test_size=0.2)
+
+# 构建模型
+main_input = Input(shape=(X.shape[1], 2), name='main_input')
+enc_output, state_h, state_c = Encoder()(main_input)
+outputs = Decoder()(enc_output, [state_h, state_c])
+model = Model(main_input, outputs)
+print(model.summary())
+# 指定训练配置
+model.compile(optimizer='adam',
+              loss='categorical_crossentropy',
+              metrics=['accuracy'])
+# 训练模型
+tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir="./data/logs")
+model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
+    filepath='./data/tmp/checkpoint'+time,
+    save_weights_only=False,
+    monitor='val_accuracy',
+    mode='max',
+    save_best_only=True)
+early_stop_callback = tf.keras.callbacks.EarlyStopping(
+    monitor="val_accuracy",
+    min_delta=0,
+    patience=5,
+    verbose=0,
+    mode="auto",
+    baseline=None,
+    restore_best_weights=False,
+)
+history = model.fit(x_train,
+          y_train,
+          epochs=80,
+          validation_data=(x_valid, y_valid),
+          batch_size=128,
+          callbacks=[tensorboard_callback, model_checkpoint_callback, early_stop_callback])
+history.history
+# 绘制训练 & 验证的准确率值
+plt.plot(history.history['acc'])
+plt.plot(history.history['val_acc'])
+plt.title('Model accuracy')
+plt.ylabel('Accuracy')
+plt.xlabel('Epoch')
+plt.legend(['Train', 'Test'], loc='upper left')
+plt.show()
+
+# 绘制训练 & 验证的损失值
+plt.plot(history.history['loss'])
+plt.plot(history.history['val_loss'])
+plt.title('Model loss')
+plt.ylabel('Loss')
+plt.xlabel('Epoch')
+plt.legend(['Train', 'Test'], loc='upper left')
+plt.show()
