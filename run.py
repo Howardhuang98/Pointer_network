@@ -6,6 +6,7 @@
 @Modify Time :    2021/11/10 15:38  
 ------------      
 """
+import time
 import numpy as np
 import tensorflow as tf
 from keras.layers import Input
@@ -13,10 +14,9 @@ from keras.models import Model
 from matplotlib import pyplot as plt
 from sklearn.model_selection import train_test_split
 from model import *
-import time
+
 # 记录脚本运行时间
 time = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
-
 
 # 加载在TSP_data脚本中生成的数据,位于data文件夹内
 X = np.load(r"data/X-100000.npy")
@@ -38,7 +38,7 @@ model.compile(optimizer='adam',
 # 训练模型
 tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir="./data/logs")
 model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
-    filepath='./data/tmp/checkpoint'+time,
+    filepath='./data/tmp/checkpoint' + time,
     save_weights_only=False,
     monitor='val_accuracy',
     mode='max',
@@ -46,22 +46,21 @@ model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
 early_stop_callback = tf.keras.callbacks.EarlyStopping(
     monitor="val_accuracy",
     min_delta=0,
-    patience=5,
+    patience=10,
     verbose=0,
     mode="auto",
     baseline=None,
     restore_best_weights=False,
 )
 history = model.fit(x_train,
-          y_train,
-          epochs=80,
-          validation_data=(x_valid, y_valid),
-          batch_size=128,
-          callbacks=[tensorboard_callback, model_checkpoint_callback, early_stop_callback])
-history.history
+                    y_train,
+                    epochs=80,
+                    validation_data=(x_valid, y_valid),
+                    batch_size=128,
+                    callbacks=[tensorboard_callback, model_checkpoint_callback, early_stop_callback])
 # 绘制训练 & 验证的准确率值
-plt.plot(history.history['acc'])
-plt.plot(history.history['val_acc'])
+plt.plot(history.history['accuracy'])
+plt.plot(history.history['val_accuracy'])
 plt.title('Model accuracy')
 plt.ylabel('Accuracy')
 plt.xlabel('Epoch')
