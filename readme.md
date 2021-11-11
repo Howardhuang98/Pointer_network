@@ -14,7 +14,7 @@ numpy
 
 文本摘要，凸包问题，Roundelay 三角剖分，旅行商问题 
 
-其中包括一些Latex，github无法渲染，所以建议clone下来用Typro查看。
+其中包括一些Latex，github无法渲染，所以建议clone下来用Typora查看。
 ## abstract
 
 本文提出一种新的网络结构：输出序列的元素是与输入序列中的位置相对应的离散标记。
