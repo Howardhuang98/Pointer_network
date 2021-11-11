@@ -8,7 +8,6 @@
 """
 import time
 import numpy as np
-import tensorflow as tf
 from keras.layers import Input
 from keras.models import Model
 from matplotlib import pyplot as plt
@@ -19,9 +18,9 @@ from model import *
 time = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
 
 # 加载在TSP_data脚本中生成的数据,位于data文件夹内
-X = np.load(r"data/X-100000.npy")
-Y = np.load(r"data/Y-100000.npy")
-YY = np.load(r"data/YY-100000.npy")
+X = np.load(r"data/X-1000000.npy")
+Y = np.load(r"data/Y-1000000.npy")
+YY = np.load(r"data/YY-1000000.npy")
 x_train, x_test, y_train, y_test = train_test_split(X, YY, test_size=0.2)
 x_train, x_valid, y_train, y_valid = train_test_split(x_train, y_train, test_size=0.2)
 
@@ -38,7 +37,7 @@ model.compile(optimizer='adam',
 # 训练模型
 tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir="./data/logs")
 model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
-    filepath='./data/tmp/checkpoint' + time,
+    filepath='./data/tmp/checkpoint-' + time,
     save_weights_only=False,
     monitor='val_accuracy',
     mode='max',
@@ -54,10 +53,13 @@ early_stop_callback = tf.keras.callbacks.EarlyStopping(
 )
 history = model.fit(x_train,
                     y_train,
-                    epochs=80,
+                    epochs=100,
                     validation_data=(x_valid, y_valid),
                     batch_size=128,
                     callbacks=[tensorboard_callback, model_checkpoint_callback, early_stop_callback])
+loss, acc = model.evaluate(x_test, y_test)
+print("测试集损失：{} \n"
+      "测试集准确率：{}".format(loss,acc))
 # 绘制训练 & 验证的准确率值
 plt.plot(history.history['accuracy'])
 plt.plot(history.history['val_accuracy'])

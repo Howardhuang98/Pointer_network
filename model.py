@@ -142,3 +142,10 @@ class Decoder(keras.layers.Layer):
         # probs 是 [batch,输入时间戳]大小的张量
         probs = self.attention(self.enc_output, h)
         return probs, [h, c, probs]
+
+    def get_initial_state(self,states):
+        """
+        根据 states的形状来生成一个初始的 last_pointer 张量
+        :param states: [h,c]
+        :return:
+        """
