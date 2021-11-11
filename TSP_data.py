@@ -71,6 +71,14 @@ class Tsp:
             i += 1
             excluded.update((x+dx, y+dy) for (dx, dy) in deltas)
         return randPoints
+    def cost(self,x,y):
+        cost = 0
+        for i in range(len(y[0])-1):
+            point_idx = y[0][i]
+            point_idx2 = y[0][i+1]
+            cost += self.length(x[0][point_idx],x[0][point_idx2])
+        return cost
+
 
 if __name__ == "__main__":
     # 准备数据

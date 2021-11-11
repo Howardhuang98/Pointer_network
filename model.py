@@ -119,10 +119,11 @@ class Decoder(keras.layers.Layer):
         进入rnn函数，在x_input上，在时间戳维度上进行迭代执行step函数。
         step 函数需要的状态共有3个，分别为[h,c,last_pointer], 第一次的last_pointer为0张量
         """
-        if enc_output.shape[0] is None:
-            b = 1
-        else:
-            b = enc_output.shape[0]
+        b = tf.shape(enc_output)[0]
+        # if enc_output.shape[0] is None:
+        #     b = 2
+        # else:
+        #     b = enc_output.shape[0]
         last_pointer = tf.ones(shape=(b, enc_output.shape[1]))
         initial_states = states + [last_pointer]
         last_output, outputs, states = K.rnn(self.step, x_input,
