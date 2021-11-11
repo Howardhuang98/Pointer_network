@@ -1,10 +1,18 @@
-# 《pointer networks》
+# Pointer networks Tensorflow2
 
+原文：https://arxiv.org/abs/1506.03134  
+仅供参考与学习，内含代码备注  
 
+## 环境
+tensorflow==2.6.0  
+tqdm  
+matplotlib   
+numpy  
+
+# 《pointer networks》阅读笔记
 应用场景：
 
-文本摘要，凸包问题，Roundelay 三角剖分，旅行商问题
-
+文本摘要，凸包问题，Roundelay 三角剖分，旅行商问题 
 ## abstract
 
 本文提出一种新的网络结构：输出序列的元素是与输入序列中的位置相对应的离散标记。
