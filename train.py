@@ -19,9 +19,10 @@ time = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
 
 # 加载数据
 X = np.load(r"tsp_data/tsp_5/tsp5_train_x.npy")
-YY = np.load(r"tsp_data/tsp_5/tsp5_train_y.npy")
-x_train, x_test, y_train, y_test = train_test_split(X, YY, test_size=0.2)
-x_train, x_valid, y_train, y_valid = train_test_split(x_train, y_train, test_size=0.2)
+Y = np.load(r"tsp_data/tsp_5/tsp5_train_y.npy")
+x_test = np.load(r"tsp_data/tsp_5/tsp5_test_x.npy")
+y_test = np.load(r"tsp_data/tsp_5/tsp5_test_y.npy")
+x_train, x_valid, y_train, y_valid = train_test_split(X, Y, test_size=0.2)
 print(x_train.shape, y_train.shape)
 
 # 构建模型
@@ -57,8 +58,8 @@ history = model.fit(x_train,
                     batch_size=128,
                     callbacks=[model_checkpoint_callback, early_stop_callback])
 loss, acc = model.evaluate(x_test, y_test)
-print("测试集损失：{} \n"
-      "测试集准确率：{}".format(loss,acc))
+print("测试集损失：{} \n测试集准确率：{}".format(loss,acc))
+
 # 绘制训练 & 验证的准确率值
 plt.plot(history.history['accuracy'])
 plt.plot(history.history['val_accuracy'])
