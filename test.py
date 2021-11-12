@@ -8,7 +8,7 @@
 """
 from tensorflow import int32
 
-from TSP_data import Tsp
+from utils import Tsp
 from model import *
 import tensorflow as tf
 from tensorflow.keras.layers import LSTMCell

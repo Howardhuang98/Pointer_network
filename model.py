@@ -120,10 +120,6 @@ class Decoder(keras.layers.Layer):
         step 函数需要的状态共有3个，分别为[h,c,last_pointer], 第一次的last_pointer为0张量
         """
         b = tf.shape(enc_output)[0]
-        # if enc_output.shape[0] is None:
-        #     b = 2
-        # else:
-        #     b = enc_output.shape[0]
         last_pointer = tf.ones(shape=(b, enc_output.shape[1]))
         initial_states = states + [last_pointer]
         last_output, outputs, states = K.rnn(self.step, x_input,

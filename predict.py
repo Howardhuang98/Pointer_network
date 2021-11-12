@@ -12,7 +12,7 @@ from keras.layers import Input
 from keras.models import Model
 from keras.utils.np_utils import to_categorical
 
-from TSP_data import Tsp
+from utils import Tsp
 from model import *
 
 # 生成问题
