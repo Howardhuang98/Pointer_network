@@ -51,28 +51,30 @@ early_stop_callback = tf.keras.callbacks.EarlyStopping(
     baseline=None,
     restore_best_weights=False,
 )
-model.load_weights(r"./data/ckp-2021-11-12-11-45-37/checkpoint")
-history = model.fit(x_train,
-                    y_train,
-                    epochs=1000,
-                    validation_data=(x_valid, y_valid),
-                    batch_size=128,
-                    callbacks=[model_checkpoint_callback, early_stop_callback])
+# 尝试加载权重,否则就训练
+try:
+    model.load_weights(r"./data/ckp-2021-11-12-11-45-37/checkpoint")
+except:
+    history = model.fit(x_train,
+                        y_train,
+                        epochs=1000,
+                        validation_data=(x_valid, y_valid),
+                        batch_size=128,
+                        callbacks=[model_checkpoint_callback, early_stop_callback])
+    # 绘制训练 & 验证的准确率值
+    plt.plot(history.history['accuracy'])
+    plt.plot(history.history['val_accuracy'])
+    plt.title('Model accuracy')
+    plt.ylabel('Accuracy')
+    plt.xlabel('Epoch')
+    plt.legend(['Train', 'Test'], loc='upper left')
+    plt.show()
 
-# 绘制训练 & 验证的准确率值
-plt.plot(history.history['accuracy'])
-plt.plot(history.history['val_accuracy'])
-plt.title('Model accuracy')
-plt.ylabel('Accuracy')
-plt.xlabel('Epoch')
-plt.legend(['Train', 'Test'], loc='upper left')
-plt.show()
-
-# 绘制训练 & 验证的损失值
-plt.plot(history.history['loss'])
-plt.plot(history.history['val_loss'])
-plt.title('Model loss')
-plt.ylabel('Loss')
-plt.xlabel('Epoch')
-plt.legend(['Train', 'Test'], loc='upper left')
-plt.show()
+    # 绘制训练 & 验证的损失值
+    plt.plot(history.history['loss'])
+    plt.plot(history.history['val_loss'])
+    plt.title('Model loss')
+    plt.ylabel('Loss')
+    plt.xlabel('Epoch')
+    plt.legend(['Train', 'Test'], loc='upper left')
+    plt.show()
