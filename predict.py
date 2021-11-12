@@ -30,8 +30,7 @@ model.compile(optimizer='adam',
 model.load_weights(r"./data/ckp-2021-11-12-11-45-37/checkpoint")
 
 y = model.predict(x_test)
-model_cost = cost(x_test,y)
-optimal_cost = cost(x_test,y_test)
+model_cost = cost(x_test, y)
+optimal_cost = cost(x_test, y_test)
 
-print("模型预测路径长度-最短路径=",sum(model_cost-optimal_cost)/x_test.shape[0])
-
+print("模型预测路径长度-最短路径=", sum(model_cost - optimal_cost) / x_test.shape[0])

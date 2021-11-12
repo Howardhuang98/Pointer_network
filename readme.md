@@ -1,6 +1,7 @@
 # Pointer networks Tensorflow2
 
 原文：https://arxiv.org/abs/1506.03134  
+数据：http://goo.gl/NDcOIG  
 仅供参考与学习，内含代码备注  
 
 ## 环境
