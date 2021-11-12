@@ -51,14 +51,13 @@ early_stop_callback = tf.keras.callbacks.EarlyStopping(
     baseline=None,
     restore_best_weights=False,
 )
+model.load_weights(r"./data/ckp-2021-11-12-11-45-37/checkpoint")
 history = model.fit(x_train,
                     y_train,
                     epochs=1000,
                     validation_data=(x_valid, y_valid),
                     batch_size=128,
                     callbacks=[model_checkpoint_callback, early_stop_callback])
-loss, acc = model.evaluate(x_test, y_test)
-print("测试集损失：{} \n测试集准确率：{}".format(loss,acc))
 
 # 绘制训练 & 验证的准确率值
 plt.plot(history.history['accuracy'])
