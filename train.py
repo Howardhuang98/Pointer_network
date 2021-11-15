@@ -26,9 +26,9 @@ x_train, x_valid, y_train, y_valid = train_test_split(X, Y, test_size=0.2)
 print(x_train.shape, y_train.shape)
 
 # 构建模型
-main_input = Input(shape=(X.shape[1], 2), name='main_input')
+main_input = Input(shape=(5, 2), name='main_input')
 enc_output, state_h, state_c = Encoder(hidden_dimensions=256)(main_input)
-outputs = Decoder(hidden_dimensions=256)(enc_output, [state_h, state_c])
+outputs = Decoder(hidden_dimensions=256)(main_input, enc_output, [state_h, state_c])
 model = Model(main_input, outputs)
 print(model.summary())
 # 指定训练配置

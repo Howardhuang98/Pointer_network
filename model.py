@@ -62,11 +62,11 @@ class Attention(keras.layers.Layer):
     注意力层
     """
 
-    def __init__(self, hidden_dimensions=128, name='attention'):
+    def __init__(self, hidden_dimensions=128, name="attention"):
         super(Attention, self).__init__(name=name, trainable=True)
-        self.W1 = keras.layers.Dense(hidden_dimensions, use_bias=False)
-        self.W2 = keras.layers.Dense(hidden_dimensions, use_bias=False)
-        self.V = keras.layers.Dense(1, use_bias=False)
+        self.W1 = keras.layers.Dense(hidden_dimensions, use_bias=False, input_shape=(2,))
+        self.W2 = keras.layers.Dense(hidden_dimensions, use_bias=False, input_shape=(2,))
+        self.V = keras.layers.Dense(1, use_bias=False,input_shape=(hidden_dimensions,))
 
     def call(self, encoder_outputs, dec_output):
         """
@@ -78,15 +78,35 @@ class Attention(keras.layers.Layer):
         :return: 指针的概率分布，一共有time_steps种可能，p [batch,time_steps]
 
         """
-        w1_e = self.W1(encoder_outputs)  # [batch, time_steps, hidden_dimensions]
-        w2_d = self.W2(dec_output)  # [batch,hidden_dimensions]
-        w2_d = K.expand_dims(w2_d, axis=1)  # [batch,1,hidden_dimensions]
-        tanh_output = tanh(w1_e + w2_d)  # [batch,time_steps,hidden_dimensions]
-        v_dot_tanh = self.V(tanh_output)  # [batch,time_steps,1]
-        attention_weights = softmax(v_dot_tanh, axis=1)  # [batch,time_steps,1]
-        att_shape = K.shape(attention_weights)
-        p = K.reshape(attention_weights, (att_shape[0], att_shape[1]))
-        return p
+        # w1_e = self.W1(encoder_outputs)  # [batch, time_steps, hidden_dimensions]
+        # w2_d = self.W2(dec_output)  # [batch,hidden_dimensions]
+        # w2_d = K.expand_dims(w2_d, axis=1)  # [batch,1,hidden_dimensions]
+        # tanh_output = tanh(w1_e + w2_d)  # [batch,time_steps,hidden_dimensions]
+        # v_dot_tanh = self.V(tanh_output)  # [batch,time_steps,1]
+        # attention_weights = softmax(v_dot_tanh, axis=1)  # [batch,time_steps,1]
+        # att_shape = K.shape(attention_weights)
+        # p = K.reshape(attention_weights, (att_shape[0], att_shape[1]))
+        # return p
+        # 此处outputs 是一个 [batch,time_steps,1]的张量
+        batch = tf.shape(encoder_outputs)[0]
+        time_steps = tf.shape(encoder_outputs)[1]
+        _, outputs, _ = K.rnn(self.step,encoder_outputs,initial_states=[dec_output])
+        outputs = tf.reshape(outputs,shape=[batch,time_steps])
+        return outputs
+
+    def step(self,input,states):
+        """
+
+        :param input: [batch, features]
+        :param states: dec_output [batch, hidden_dimensions]
+        :return:
+        """
+        dec_output = states[0]
+        w1_e = self.W1(input)
+        w2_d = self.W2(dec_output)
+        tanh_output = tanh(w1_e + w2_d)
+        v_dot_tanh = self.V(tanh_output)
+        return v_dot_tanh, [dec_output]
 
 
 class Decoder(keras.layers.Layer):
@@ -99,30 +119,29 @@ class Decoder(keras.layers.Layer):
         self.hidden_dimensions = hidden_dimensions
         self.attention = Attention(hidden_dimensions)
         self.decoder_cell = DecoderCell(hidden_dimensions)
+        self.x = None
 
     def build(self, input_shape):
         super(Decoder, self).build(input_shape)
         self.input_spec = [InputSpec(shape=input_shape)]
 
-    def call(self, enc_output, states):
+    def call(self, x, enc_output, states):
         """
 
+        :param x: [batch, time_steps, features]
         :param enc_output: encoder的输出，enc_output: [h1,h2,h3...h_n] [batch,time_steps,hidden_dimensions]
         :param states: [h,c] 两个状态向量的list
         :return:
         """
-        self.enc_output = enc_output
-        input_shape = enc_output.shape
-        x_input = enc_output[:, enc_output.shape[1] - 1, :]
-        x_input = K.repeat(x_input, input_shape[1])
         """
         进入rnn函数，在x_input上，在时间戳维度上进行迭代执行step函数。
-        step 函数需要的状态共有3个，分别为[h,c,last_pointer], 第一次的last_pointer为0张量
+        step 函数需要的状态共有3个，分别为[h,c,last_pointer], 第一次的last_pointer为0张量。
         """
+        self.x = x
         b = tf.shape(enc_output)[0]
-        last_pointer = tf.ones(shape=(b, enc_output.shape[1]))
-        initial_states = states + [last_pointer]
-        last_output, outputs, states = K.rnn(self.step, x_input,
+        last_pointer = tf.ones(shape=(b, 2))
+        initial_states = states + [last_pointer, enc_output, x]
+        last_output, outputs, states = K.rnn(self.step, enc_output,
                                              initial_states)
 
         return outputs
@@ -131,18 +150,24 @@ class Decoder(keras.layers.Layer):
         """
         对于这个K.rnn，x_input已经定死了，只能是h_n，所以只能通过状态来输入上一次的结果。
         :param x_input: [batch,hidden_dimensions],是编码器最后一次的隐状态, 且每次进来都是
-        :param states: [h,c,last_pointer]
+        :param states: [h,c,last_pointer,enc_output]
         :return:
         """
-        h, c, last_pointer = states
-        _, [h, c] = self.decoder_cell(last_pointer, [h,c])
+        h, c, last_pointer, enc_output, x = states
+        _, [h, c] = self.decoder_cell(last_pointer, [h, c])
         # probs 是 [batch,输入时间戳]大小的张量
-        probs = self.attention(self.enc_output, h)
-        return probs, [h, c, probs]
+        probs = self.attention(enc_output, h)
+        pointer = _get_pointer(x, probs)
+        return probs, [h, c, pointer, enc_output, x]
 
-    def get_initial_state(self,states):
-        """
-        根据 states的形状来生成一个初始的 last_pointer 张量
-        :param states: [h,c]
-        :return:
-        """
+
+def _get_pointer(x, probs):
+    """
+    :param x: [batch,time_steps,2]
+    :param probs: [batch,time_steps]
+    :return: [batch,2]
+    """
+    idx = tf.argmax(probs,axis=1)
+    pointer = tf.gather(x,idx,batch_dims=1)
+    return pointer
+
