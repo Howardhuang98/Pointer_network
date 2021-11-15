@@ -28,11 +28,20 @@ def cost(x, y):
             for j in range(len(idx) - 1):
                 city1 = idx[j]
                 city2 = idx[j + 1]
-                travel = np.sqrt(sum(np.power(points[city2] - points[city1], 2)))
-                travel += travel
+                travel += np.sqrt(sum(np.power(points[city2] - points[city1], 2)))
             travels.append(travel)
         travels = np.asarray(travels)
         return travels
+
+def prob2rank(probs):
+    """
+
+    :param probs: [n,n]
+    :return: rank: [n]
+    """
+    idx = probs.argmax(axis=1)
+    return idx
+
 
 
 def draw(x, y):

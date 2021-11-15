@@ -92,6 +92,7 @@ class Attention(keras.layers.Layer):
         time_steps = tf.shape(encoder_outputs)[1]
         _, outputs, _ = K.rnn(self.step,encoder_outputs,initial_states=[dec_output])
         outputs = tf.reshape(outputs,shape=[batch,time_steps])
+        outputs = softmax(outputs, axis=1)
         return outputs
 
     def step(self,input,states):
@@ -160,7 +161,7 @@ class Decoder(keras.layers.Layer):
         pointer = _get_pointer(x, probs)
         return probs, [h, c, pointer, enc_output, x]
 
-
+@tf.function
 def _get_pointer(x, probs):
     """
     :param x: [batch,time_steps,2]

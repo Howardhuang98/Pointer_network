@@ -37,7 +37,7 @@ model.compile(optimizer='SGD',
               metrics=['accuracy'])
 # 训练模型
 model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
-    filepath='./data/ckp-{}/checkpoint'.format(time),
+    filepath='./data/checkpoint-{}.h5'.format(time),
     save_weights_only=True,
     monitor='val_accuracy',
     mode='max',
@@ -52,11 +52,12 @@ early_stop_callback = tf.keras.callbacks.EarlyStopping(
     restore_best_weights=False,
 )
 # 训练
+model.load_weights("data/checkpoint-2021-11-15-16-13-26.h5")
 history = model.fit(x_train,
                     y_train,
                     epochs=1000,
                     validation_data=(x_valid, y_valid),
-                    batch_size=128,
+                    batch_size=500,
                     callbacks=[model_checkpoint_callback, early_stop_callback])
 # 绘制训练 & 验证的准确率值
 plt.plot(history.history['accuracy'])
