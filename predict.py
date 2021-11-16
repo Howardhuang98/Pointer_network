@@ -35,3 +35,7 @@ optimal_cost = cost(x_test, y_test)
 
 print("模型预测路径长度-最短路径=", sum(model_cost - optimal_cost) / x_test.shape[0])
 print(prob2rank(y[32]),prob2rank(y_test[32]))
+print(prob2rank(y[20]),prob2rank(y_test[20]))
+print(prob2rank(y[5]),prob2rank(y_test[5]))
+print(prob2rank(y[100]),prob2rank(y_test[100]))
+print(prob2rank(y[1000]),prob2rank(y_test[1000]))

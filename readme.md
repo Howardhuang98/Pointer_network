@@ -5,10 +5,12 @@
 仅供参考与学习，内含代码备注  
 
 ## 性能表现
-|节点数目|模型预测路径长度-最佳路径长度|超参数|
-|----|----|----|
+|节点数目|模型预测路径长度-最佳路径长度|超参数|Version|
+|----|----|----|----|
 |5|0.033425577472687575|adam优化器，LSTM128个隐藏层|
 |5|0.02872023683121583|SGD，LSTM256个隐藏层|
+|5|0.002466938746992173|先用adam，再用SGD，LSTM256个隐藏层|52681ca|
+> 版本写的是commi id，可以用git进行rollback。
 
 ![image-model_accuracy](%E3%80%8Apointer%20networks%E3%80%8B%E9%98%85%E8%AF%BB%E7%AC%94%E8%AE%B0.assets/model_accuracy.png)
 ![image-model_loss](%E3%80%8Apointer%20networks%E3%80%8B%E9%98%85%E8%AF%BB%E7%AC%94%E8%AE%B0.assets/model_loss.png)
