@@ -6,12 +6,13 @@
 @Modify Time :    2021/11/9 15:26  
 ------------      
 """
+
 import keras
 import keras.backend as K
+import tensorflow as tf
 from keras.activations import tanh, softmax
 from keras.engine.base_layer import InputSpec
 from keras.layers import LSTM
-import tensorflow as tf
 
 
 class Encoder(keras.layers.Layer):
@@ -26,9 +27,10 @@ class Encoder(keras.layers.Layer):
         super(Encoder, self).__init__(name='encoder', trainable=True)
         self.lstm = LSTM(units=hidden_dimensions, return_sequences=True, return_state=True, name="encoder")
 
-    def call(self, x):
+    def call(self, x, **kwargs):
         """
 
+        :param **kwargs:
         :param x: 输入数据 [batch, time steps, feature]
         :return:
         enc_output: [h1,h2,h3...h_n]
@@ -39,21 +41,22 @@ class Encoder(keras.layers.Layer):
         return enc_output, state_h, state_c
 
 
-class DecoderCell(keras.layers.LSTMCell):
+class LstmCell(keras.layers.LSTMCell):
     """
     解码器，要求输入为[batch,features]
     """
 
     def __init__(self, hidden_dimensions=128):
-        super(DecoderCell, self).__init__(units=hidden_dimensions)
+        super(LstmCell, self).__init__(units=hidden_dimensions)
 
-    def call(self, inputs, states):
+    def call(self, inputs, states, **kwargs):
         """
+        :param **kwargs:
         :param inputs: [batch,features]
         :param states: [h,c] 两个张量的列表，每个张量的形状为 [batch, units]
         :return:
         """
-        state_h, [state_h, state_c] = super(DecoderCell, self).call(inputs, states)
+        state_h, [state_h, state_c] = super(LstmCell, self).call(inputs, states)
         return state_h, [state_h, state_c]
 
 
@@ -66,36 +69,27 @@ class Attention(keras.layers.Layer):
         super(Attention, self).__init__(name=name, trainable=True)
         self.W1 = keras.layers.Dense(hidden_dimensions, use_bias=False, input_shape=(2,))
         self.W2 = keras.layers.Dense(hidden_dimensions, use_bias=False, input_shape=(2,))
-        self.V = keras.layers.Dense(1, use_bias=False,input_shape=(hidden_dimensions,))
+        self.V = keras.layers.Dense(1, use_bias=False, input_shape=(hidden_dimensions,))
 
-    def call(self, encoder_outputs, dec_output):
+    def call(self, encoder_outputs, dec_output, **kwargs):
         """
         输入编码器所有的隐状态，enc_output。 [batch, time_steps, features]
         解码器本次解码的状态d，state_h。[batch, features]
+        :param **kwargs:
         :param encoder_outputs: [batch, time_steps, features]
         :param dec_output: [batch, features]
 
         :return: 指针的概率分布，一共有time_steps种可能，p [batch,time_steps]
 
         """
-        # w1_e = self.W1(encoder_outputs)  # [batch, time_steps, hidden_dimensions]
-        # w2_d = self.W2(dec_output)  # [batch,hidden_dimensions]
-        # w2_d = K.expand_dims(w2_d, axis=1)  # [batch,1,hidden_dimensions]
-        # tanh_output = tanh(w1_e + w2_d)  # [batch,time_steps,hidden_dimensions]
-        # v_dot_tanh = self.V(tanh_output)  # [batch,time_steps,1]
-        # attention_weights = softmax(v_dot_tanh, axis=1)  # [batch,time_steps,1]
-        # att_shape = K.shape(attention_weights)
-        # p = K.reshape(attention_weights, (att_shape[0], att_shape[1]))
-        # return p
-        # 此处outputs 是一个 [batch,time_steps,1]的张量
         batch = tf.shape(encoder_outputs)[0]
         time_steps = tf.shape(encoder_outputs)[1]
-        _, outputs, _ = K.rnn(self.step,encoder_outputs,initial_states=[dec_output])
-        outputs = tf.reshape(outputs,shape=[batch,time_steps])
+        _, outputs, _ = K.rnn(self.step, encoder_outputs, initial_states=[dec_output])
+        outputs = tf.reshape(outputs, shape=[batch, time_steps])
         outputs = softmax(outputs, axis=1)
         return outputs
 
-    def step(self,input,states):
+    def step(self, input, states):
         """
 
         :param input: [batch, features]
@@ -119,7 +113,7 @@ class Decoder(keras.layers.Layer):
         super(Decoder, self).__init__(name=name, **kwargs)
         self.hidden_dimensions = hidden_dimensions
         self.attention = Attention(hidden_dimensions)
-        self.decoder_cell = DecoderCell(hidden_dimensions)
+        self.decoder_cell = LstmCell(hidden_dimensions)
         self.x = None
 
     def build(self, input_shape):
@@ -158,17 +152,53 @@ class Decoder(keras.layers.Layer):
         _, [h, c] = self.decoder_cell(last_pointer, [h, c])
         # probs 是 [batch,输入时间戳]大小的张量
         probs = self.attention(enc_output, h)
-        pointer = _get_pointer(x, probs)
+        pointer = get_pointer(x, probs)
         return probs, [h, c, pointer, enc_output, x]
 
+
 @tf.function
-def _get_pointer(x, probs):
+def get_pointer(x, probs, rank=0):
     """
     :param x: [batch,time_steps,2]
     :param probs: [batch,time_steps]
     :return: [batch,2]
+    :param pointer
     """
-    idx = tf.argmax(probs,axis=1)
-    pointer = tf.gather(x,idx,batch_dims=1)
+    total_rank = tf.argsort(probs, axis=1, direction="DESCENDING")
+    idx = total_rank[:, rank]
+    tf.reshape(idx, shape=[tf.shape(idx)[0], 1])
+    # gather 只能在一个维度上进行 gather
+    # pointer [batch,2] 城市坐标
+    pointer = tf.gather(x, idx, axis=1, batch_dims=0)[:, 0, :]
+    # prob [batch,1] 该坐标的概率
+    prob = tf.gather(probs, idx, batch_dims=0, axis=1)[:, 0]
     return pointer
 
+
+class Beam_decoder(Decoder):
+    def __init__(self, hidden_dimensions=128, beam_width=3, name='decoder'):
+        super(Beam_decoder, self).__init__(hidden_dimensions, name)
+        self.beam_width = beam_width
+
+    def call(self, x, enc_output, states):
+        self.x = x
+        b = tf.shape(enc_output)[0]
+        last_pointer = tf.ones(shape=(b, 2))
+        initial_states = states + [last_pointer, enc_output, x, 0]
+        last_output, outputs, states = K.rnn(self.step, enc_output,
+                                             initial_states)
+
+        return outputs
+
+    def step(self, x_input, states):
+        h, c, last_pointer, enc_output, x, step = states
+        if step == 0:
+            _, [h, c] = self.decoder_cell(last_pointer, [h, c])
+            # probs 是 [batch,输入时间戳]大小的张量
+            probs = self.attention(enc_output, h)
+            pointer = get_pointer(x, probs, 1)
+            step += 1
+        else:
+            pass
+
+        return probs, [h, c, pointer, enc_output, x, step]

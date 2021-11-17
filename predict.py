@@ -11,7 +11,7 @@ from keras.layers import Input
 from keras.models import Model
 
 from model import *
-from utils import cost,prob2rank
+from utils import cost, prob2rank
 
 x_test = np.load(r"tsp_data/tsp_5/tsp5_test_x.npy")
 y_test = np.load(r"tsp_data/tsp_5/tsp5_test_y.npy")
