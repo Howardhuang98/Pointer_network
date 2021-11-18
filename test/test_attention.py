@@ -8,7 +8,7 @@
 """
 from model import *
 
-encoder_outputs, dec_output = tf.random.normal(shape=(5,10,2)),tf.random.normal(shape=(5,128))
+encoder_outputs, dec_output = tf.random.normal(shape=(5, 10, 2)), tf.random.normal(shape=(5, 128))
 attention = Attention()
-y = attention(encoder_outputs,dec_output)
+y = attention(encoder_outputs, dec_output)
 print(y.shape)

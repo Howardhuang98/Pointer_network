@@ -7,11 +7,13 @@
 ------------      
 """
 import time
+
 import numpy as np
 from keras.layers import Input
 from keras.models import Model
 from matplotlib import pyplot as plt
 from sklearn.model_selection import train_test_split
+
 from model import *
 
 # 记录脚本运行时间
@@ -45,14 +47,14 @@ model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
 early_stop_callback = tf.keras.callbacks.EarlyStopping(
     monitor="val_accuracy",
     min_delta=0,
-    patience=50,
+    patience=12,
     verbose=0,
     mode="auto",
     baseline=None,
     restore_best_weights=False,
 )
 # 训练
-model.load_weights("data/checkpoint-2021-11-15-16-13-26.h5")
+model.load_weights("data/checkpoint-2021-11-18-00-07-32.h5")
 history = model.fit(x_train,
                     y_train,
                     epochs=1000,

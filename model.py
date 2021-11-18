@@ -157,8 +157,10 @@ class Decoder(keras.layers.Layer):
 
 
 @tf.function
-def get_pointer(x, probs, rank=0):
+def get_pointer(x, probs, rank=0, return_prob=False):
     """
+    :param return_prob:
+    :param rank:
     :param x: [batch,time_steps,2]
     :param probs: [batch,time_steps]
     :return: [batch,2]
@@ -172,7 +174,10 @@ def get_pointer(x, probs, rank=0):
     pointer = tf.gather(x, idx, axis=1, batch_dims=0)[:, 0, :]
     # prob [batch,1] 该坐标的概率
     prob = tf.gather(probs, idx, batch_dims=0, axis=1)[:, 0]
-    return pointer
+    if return_prob:
+        return pointer, prob
+    else:
+        return pointer
 
 
 class Beam_decoder(Decoder):
@@ -184,21 +189,34 @@ class Beam_decoder(Decoder):
         self.x = x
         b = tf.shape(enc_output)[0]
         last_pointer = tf.ones(shape=(b, 2))
-        initial_states = states + [last_pointer, enc_output, x, 0]
-        last_output, outputs, states = K.rnn(self.step, enc_output,
-                                             initial_states)
+        initial_states_0 = states + [last_pointer, enc_output, x, tf.constant(0), tf.constant(0), tf.constant(.0)]
+        last_output_0, outputs_0, states_0 = K.rnn(self.step, enc_output,
+                                                   initial_states_0)
+        initial_states_1 = states + [last_pointer, enc_output, x, tf.constant(0), tf.constant(1), tf.constant(.0)]
+        initial_states_2 = states + [last_pointer, enc_output, x, tf.constant(0), tf.constant(2), tf.constant(.0)]
+        last_output_1, outputs_1, states_1 = K.rnn(self.step, enc_output,
+                                                   initial_states_1)
+        last_output_2, outputs_2, states_2 = K.rnn(self.step, enc_output,
+                                                   initial_states_2)
+        idx = tf.argmax([states_0[7], states_1[7], states_2[7]])
+        outputs = tf.gather([outputs_0, outputs_1, outputs_2], idx)
 
         return outputs
 
+    @tf.function
     def step(self, x_input, states):
-        h, c, last_pointer, enc_output, x, step = states
-        if step == 0:
+        h, c, last_pointer, enc_output, x, step, rank, score = states
+        if not tf.cast(step, tf.bool):
             _, [h, c] = self.decoder_cell(last_pointer, [h, c])
             # probs 是 [batch,输入时间戳]大小的张量
             probs = self.attention(enc_output, h)
-            pointer = get_pointer(x, probs, 1)
+            pointer, prob = get_pointer(x, probs, rank, return_prob=True)
             step += 1
         else:
-            pass
-
-        return probs, [h, c, pointer, enc_output, x, step]
+            _, [h, c] = self.decoder_cell(last_pointer, [h, c])
+            # probs 是 [batch,输入时间戳]大小的张量
+            probs = self.attention(enc_output, h)
+            pointer, prob = get_pointer(x, probs, 0, return_prob=True)
+            step += 1
+        score += tf.math.reduce_sum(prob)
+        return probs, [h, c, pointer, enc_output, x, step, rank, score]

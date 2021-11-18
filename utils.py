@@ -33,6 +33,7 @@ def cost(x, y):
         travels = np.asarray(travels)
         return travels
 
+
 def prob2rank(probs):
     """
 
@@ -41,7 +42,6 @@ def prob2rank(probs):
     """
     idx = probs.argmax(axis=1)
     return idx
-
 
 
 def draw(x, y):

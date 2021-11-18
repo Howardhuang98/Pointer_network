@@ -8,8 +8,8 @@
 """
 from model import *
 
-x = tf.random.normal(shape=(5,5,2))
-probs = tf.random.normal(shape=(5,5))
-points = _get_pointer(x,probs)
+x = tf.random.normal(shape=(5, 5, 2))
+probs = tf.random.normal(shape=(5, 5))
+points = _get_pointer(x, probs)
 print(x)
 print(points)

@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 """
-@File    :   predict.py    
+@File    :   Beam_search_predict.py    
 @Contact :   huanghoward@foxmail.com
-@Modify Time :    2021/11/12 16:58  
+@Modify Time :    2021/11/18 19:50  
 ------------      
 """
 import numpy as np
@@ -19,7 +19,7 @@ y_test = np.load(r"tsp_data/tsp_5/tsp5_test_y.npy")
 # 构建模型
 main_input = Input(shape=(x_test.shape[1], 2), name='main_input')
 enc_output, state_h, state_c = Encoder(256)(main_input)
-outputs = Decoder(256)(main_input, enc_output, [state_h, state_c])
+outputs = Beam_decoder(256)(main_input, enc_output, [state_h, state_c])
 model = Model(main_input, outputs)
 print(model.summary())
 # 指定训练配置

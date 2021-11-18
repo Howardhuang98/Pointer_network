@@ -8,9 +8,9 @@
 """
 from model import *
 
-x = tf.random.normal(shape=(5,10,2))
-encoder_outputs = tf.random.normal(shape=(5,10,128))
-state = [tf.random.normal(shape=(5,128)),tf.random.normal(shape=(5,128))]
+x = tf.random.normal(shape=(5, 10, 2))
+encoder_outputs = tf.random.normal(shape=(5, 10, 128))
+state = [tf.random.normal(shape=(5, 128)), tf.random.normal(shape=(5, 128))]
 dec = Decoder()
-y = dec(x, encoder_outputs,state)
+y = dec(x, encoder_outputs, state)
 print(y[0])
