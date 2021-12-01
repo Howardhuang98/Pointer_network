@@ -6,6 +6,8 @@
 @Modify Time :    2021/11/10 14:35  
 ------------      
 """
+from copy import copy
+
 import numpy as np
 
 
@@ -23,7 +25,7 @@ def cost(x, y):
         travels = []
         for i in range(batch_size):
             points = x[i]
-            idx = y[i].argmax(axis=1)
+            idx = prob2rank(y[i])
             travel = 0
             for j in range(len(idx) - 1):
                 city1 = idx[j]
@@ -40,7 +42,12 @@ def prob2rank(probs):
     :param probs: [n,n]
     :return: rank: [n]
     """
-    idx = probs.argmax(axis=1)
+    probs = copy(probs)
+    idx = []
+    for prob in probs:
+        i = np.argmax(prob)
+        idx.append(i)
+        probs[:,i] = 0
     return idx
 
 

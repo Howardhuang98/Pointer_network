@@ -207,12 +207,14 @@ class Beam_decoder(Decoder):
     def step(self, x_input, states):
         h, c, last_pointer, enc_output, x, step, rank, score = states
         if not tf.cast(step, tf.bool):
+            # 如果step为0，即第一步，进入该step函数
             _, [h, c] = self.decoder_cell(last_pointer, [h, c])
             # probs 是 [batch,输入时间戳]大小的张量
             probs = self.attention(enc_output, h)
             pointer, prob = get_pointer(x, probs, rank, return_prob=True)
             step += 1
         else:
+            # 如果step>0,进入该函数
             _, [h, c] = self.decoder_cell(last_pointer, [h, c])
             # probs 是 [batch,输入时间戳]大小的张量
             probs = self.attention(enc_output, h)
